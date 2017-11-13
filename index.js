@@ -1,4 +1,4 @@
-var fs			= require('fs');
+var Readable = require('stream').Readable
 var request		= require('request');
 var EventEmitter	= require('events').EventEmitter;
 var mime		= require('mime');
@@ -8,10 +8,8 @@ function resumableUpload() {
 	this.byteCount	= 0; //init variables
 	this.tokens	= {};
 	this.filepath	= '';
-	this.metadata	= {};
 	this.retry	= -1;
 	this.host	= 'www.googleapis.com';
-	this.api	= '/upload/youtube/v3/videos';
 };
 
 util.inherits(resumableUpload, EventEmitter);
@@ -20,19 +18,19 @@ util.inherits(resumableUpload, EventEmitter);
 resumableUpload.prototype.upload = function() {
 	var self = this;
 	var options = {
-		url:	'https://' + self.host + self.api + '?uploadType=resumable&part=snippet,status,contentDetails',
+		url:	'https://' + self.host + self.api + '?uploadType=resumable',
 		headers: {
 		  'Host':			self.host,
 		  'Authorization':		'Bearer ' + self.tokens.access_token,
-		  'Content-Length':		new Buffer(JSON.stringify(self.metadata)).length,
+		  'Content-Length':		2,
 		  'Content-Type':		'application/json',
-		  'X-Upload-Content-Length':	fs.statSync(self.filepath).size,
-		  'X-Upload-Content-Type': 	mime.lookup(self.filepath)
+		  'X-Upload-Content-Length':	self.content.length,
+		  'X-Upload-Content-Type': 	'message/rfc822'
 		},
-		body: JSON.stringify(self.metadata)
+		body: '{}'
 	};
 	//Send request and start upload if success
-	request.post(options, function(err, res, body) {
+	request.put(options, function(err, res, body) {
 		if (err || !res.headers.location) {
 			self.emit('error', new Error(err));
 			self.emit('progress', 'Retrying ...');
@@ -55,16 +53,15 @@ resumableUpload.prototype.send = function() {
 		url: self.location, //self.location becomes the Google-provided URL to PUT to
 		headers: {
 		  'Authorization':	'Bearer ' + self.tokens.access_token,
-		  'Content-Length':	fs.statSync(self.filepath).size - self.byteCount,
-		  'Content-Type':	mime.lookup(self.filepath)
+		  'Content-Length':	self.content.length - self.byteCount,
+		  'Content-Type':	'message/rfc822'
 		}
 	};
 	try {
 		//creates file stream, pipes it to self.location
-		var uploadPipe = fs.createReadStream(self.filepath, {
-			start: self.byteCount,
-			end: fs.statSync(self.filepath).size
-		});
+		var uploadPipe = new Readable
+		uploadPipe.push(self.content)    // the string you want
+		uploadPipe.push(null)
 	} catch (e) {
 		self.emit('error', new Error(e));
 		return;
@@ -104,7 +101,7 @@ resumableUpload.prototype.getProgress = function(handler) {
 		headers: {
 		  'Authorization':	'Bearer ' + self.tokens.access_token,
 		  'Content-Length':	0,
-		  'Content-Range':	'bytes */' + fs.statSync(self.filepath).size
+		  'Content-Range':	'bytes */' + self.content.length
 		}
 	};
 	request.put(options, handler);
