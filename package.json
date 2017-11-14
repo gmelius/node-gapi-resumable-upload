@@ -1,5 +1,5 @@
 {
-  "name": "node-youtube-resumable-upload",
+  "name": "node-gapi-resumable-upload",
   "version": "0.2.1",
   "description": "Create resumable uploads via googleapis",
   "main": "index.js",
@@ -23,6 +23,7 @@
   },
   "keywords": [
     "youtube",
+    "gmail",
     "google",
     "resumable",
     "upload",
