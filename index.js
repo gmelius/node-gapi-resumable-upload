@@ -10,6 +10,7 @@ function resumableUpload() {
 	this.filepath	= '';
 	this.retry	= -1;
 	this.host	= 'www.googleapis.com';
+	this.metadata = {};
 };
 
 util.inherits(resumableUpload, EventEmitter);
@@ -22,15 +23,15 @@ resumableUpload.prototype.upload = function() {
 		headers: {
 		  'Host':			self.host,
 		  'Authorization':		'Bearer ' + self.tokens.access_token,
-		  'Content-Length':		2,
+		  'Content-Length':		self.metadata.length,
 		  'Content-Type':		'application/json',
 		  'X-Upload-Content-Length':	self.content.length,
 		  'X-Upload-Content-Type': 	'message/rfc822'
 		},
-		body: '{}'
+		body: JSON.stringify(self.metadata)
 	};
 	//Send request and start upload if success
-	request.put(options, function(err, res, body) {
+	const callback = function(err, res, body) {
 		if (err || !res.headers.location) {
 			self.emit('error', new Error(err));
 			self.emit('progress', 'Retrying ...');
@@ -43,7 +44,12 @@ resumableUpload.prototype.upload = function() {
 		}
 		self.location = res.headers.location;
 		self.send();
-	});
+	}
+	if (self.method === 'PUT') {
+		request.put(options, callback);
+	} else {
+		request.post(options, callback);
+	}
 }
 
 //Pipes uploadPipe to self.location (Google's Location header)
