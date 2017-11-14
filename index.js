@@ -23,7 +23,7 @@ resumableUpload.prototype.upload = function() {
 		headers: {
 		  'Host':			self.host,
 		  'Authorization':		'Bearer ' + self.tokens.access_token,
-		  'Content-Length':		self.metadata.length,
+		  'Content-Length':		JSON.stringify(self.metadata).length,
 		  'Content-Type':		'application/json',
 		  'X-Upload-Content-Length':	self.content.length,
 		  'X-Upload-Content-Type': 	'message/rfc822'
