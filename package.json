@@ -9,9 +9,8 @@
   "author": "Gray Leonard",
   "license": "ISC",
   "dependencies": {
-    "google-auth-cli": "0.0.1",
     "mime": "^1.2.11",
-    "request": "2.44.0"
+    "request": "2.88.0"
   },
   "directories": {
     "test": "test"
